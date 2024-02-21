@@ -9,15 +9,40 @@ GMAPS_API_KEY = 'AIzaSyBQeJmi6jy-mkhmC3tHeLZjwpc-zCpyT2U'
 map_client = googlemaps.Client(GMAPS_API_KEY)
 
 app = Flask(__name__)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+
 @app.route("/")
 def new_born():
     return "!"
 
+@app.route("/news")
+def news():
+    url = "https://newsapi.org/v2/everything"
+    params = {
+        "q": "ev cars ev bikes",
+        "from": "2024-01-21",
+        "sortBy": "publishedAt",
+        "apiKey": news_api_key,
+    }
+
+    response = requests.get(url, params=params)
+    data = response.json()
+
+    list_of_articles = []
+    for article in data["articles"]:
+        article_info = {
+            "title": article["title"],
+            "description": article["description"],
+            "url": article["url"],
+            "publishedAt": article["publishedAt"],
+        }
+        list_of_articles.append(article_info)
+
+    return jsonify(list_of_articles)
+
 @app.route('/maps')
 def home():
     # Fetch station data from /stationdata route
-    station_data_response = requests.get('http://127.0.0.1:5000/stationdata')
+    station_data_response = requests.get('http://127.0.0.1:5000/stationdata')  # Update the URL based on your server configuration
     station_data = json.loads(station_data_response.text)
 
     # Use the fetched data in the HTML template
@@ -61,7 +86,7 @@ def home():
 
             async function initMap() {{
                 map = new google.maps.Map(document.getElementById('map'), {{
-                    center: {{ lat: 20.2817736, lng: 85.8007684 }},
+                    center: {{ lat: 20.350295, lng: 85.805859 }},
                     zoom: 15,
                 }});
 
@@ -69,30 +94,17 @@ def home():
                 directionsRenderer = new google.maps.DirectionsRenderer();
                 directionsRenderer.setMap(map);
 
-                // Try to get user's current location
-                if (navigator.geolocation) {{
-                    navigator.geolocation.getCurrentPosition(position => {{
-                        const userLocation = {{
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        }};
-                        map.setCenter(userLocation);
-
-                        // Add a blue marker for the user's current location
-                        userMarker = new google.maps.Marker({{
-                            position: userLocation,
-                            map: map,
-                            icon: {{
-                                url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-                                scaledSize: new google.maps.Size(40, 40),
-                            }},
-                            title: 'Your Location'
-                        }});
-                        markers.push(userMarker);
-                    }}, error => {{
-                        console.error('Error getting user location:', error);
-                    }});
-                }}
+                // Add a blue marker for the user's current location
+                userMarker = new google.maps.Marker({{
+                    position: {{ lat: 20.350295, lng: 85.805859 }},
+                    map: map,
+                    icon: {{
+                        url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                        scaledSize: new google.maps.Size(40, 40),
+                    }},
+                    title: 'Your Location'
+                }});
+                markers.push(userMarker);
 
                 // Add markers for all locations
                 const stationData = {json.dumps(station_data)};
@@ -129,29 +141,8 @@ def home():
 
                     if (selectedOption === "currentLocation") {{
                         // Show predefined location for "Your Current Location"
-                        if (navigator.geolocation) {{
-                            navigator.geolocation.getCurrentPosition(position => {{
-                                const userLocation = {{
-                                    lat: position.coords.latitude,
-                                    lng: position.coords.longitude
-                                }};
-                                map.setCenter(userLocation);
-
-                                // Add a blue marker for the user's current location
-                                userMarker = new google.maps.Marker({{
-                                    position: userLocation,
-                                    map: map,
-                                    icon: {{
-                                        url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-                                        scaledSize: new google.maps.Size(40, 40),
-                                    }},
-                                    title: 'Your Location'
-                                }});
-                                markers.push(userMarker);
-                            }}, error => {{
-                                console.error('Error getting user location:', error);
-                            }});
-                        }}
+                        userMarker.setMap(map);
+                        markers.push(userMarker);
                     }} else if (selectedOption === "allStations") {{
                         // Add markers for all locations
                         stationData.forEach(location => {{
@@ -167,12 +158,6 @@ def home():
                                 calculateAndDisplayRoute(location.latitude, location.longitude);
                             }});
                         }});
-
-                        // Add back the user marker
-                        if (userMarker) {{
-                            userMarker.setMap(map);
-                            markers.push(userMarker);
-                        }}
                     }}
                     // Add other conditions for different locations if needed
                 }});
@@ -203,7 +188,7 @@ def home():
             // Load Google Maps API and initialize the map
             function loadMapScript() {{
                 const script = document.createElement('script');
-                script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBQeJmi6jy-mkhmC3tHeLZjwpc-zCpyT2U&callback=initMap';
+                script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBQeJmi6jy-mkhmC3tHeLZjwpc-zCpyT2U&callback=initMap';  // Replace YOUR_API_KEY with your actual API key
                 script.async = true;
                 script.defer = true;
                 document.head.appendChild(script);
@@ -216,6 +201,7 @@ def home():
     """
 
     return render_template_string(html_code)
+
 
 @app.route('/stationdata')
 def data():
@@ -235,7 +221,6 @@ def data():
         charging_stations.append({'name': name, 'latitude': lat, 'longitude': lng})
 
     return jsonify(charging_stations)
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True)
