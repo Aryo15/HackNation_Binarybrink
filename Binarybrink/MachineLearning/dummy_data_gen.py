@@ -3,10 +3,11 @@ import random
 
 def generate_data_with_constraint(num_samples):
     data = []
-    charging_stations = set()  # To keep track of generated charging station coordinates
+    charging_stations = set()  ##set create kiye hai for keeping track of generated charging station coordinates(type of list)
+    ###################################
     
     for _ in range(num_samples):
-        # Generate user coordinates
+        #### for generating the usera co oordinates
         user_coords = generate_user_coords(charging_stations)
         
         new_station_coords = generate_suggested_station(user_coords)
@@ -32,16 +33,18 @@ def generate_suggested_station(user_coords):
             user_coords[0] + random.uniform(-max_distance, max_distance),
             user_coords[1] + random.uniform(-max_distance, max_distance)
         )
-        # Check if the suggested station is within the 5-unit distance constraint
+        #########################################################################
+        ###to ccheck if the suggested station is within the 5-unit distance constraint.
+        #########
         if distance_between_points(user_coords, suggested_coords) <= max_distance:
             return suggested_coords
 
 def distance_between_points(coord1, coord2):
     return ((coord1[0] - coord2[0]) ** 2 + (coord1[1] - coord2[1]) ** 2) ** 0.5
 
-# Generate 50 dummy samples with the 5-unit distance constraint
+# generating anyy dummy samples with the 5unit distance constraint
 dummy_data = generate_data_with_constraint(5000)
 
-# Write the data to a JSON file
+#ye data write karne k liye haii json filee me
 with open('training_data_with_constraint.json', 'w') as file:
     json.dump(dummy_data, file)

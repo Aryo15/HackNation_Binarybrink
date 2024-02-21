@@ -3,6 +3,7 @@ from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 from sklearn.cluster import KMeans
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 # Coordinates of existing charging stations
 charging_stations = {
@@ -48,6 +49,27 @@ def prepare_data_for_training(data):
     y = np.array([entry['new_station_coords'] for entry in data])
     return X, y
 
+# Visualize the suggestions on a graph
+def plot_suggestions(suggestions, user_coords, closest_station):
+    plt.figure(figsize=(8, 6))
+    
+    # Plot the user coordinates
+    plt.scatter(user_coords[0], user_coords[1], color='blue', label='User Coordinates', zorder=5)
+    
+    # Plot the closest charging station
+    plt.scatter(charging_stations[closest_station][0], charging_stations[closest_station][1], color='green', label='Closest Charging Station', zorder=5)
+    
+    # Plot the suggestions
+    for i, suggestion in enumerate(suggestions):
+        plt.scatter(suggestion[0], suggestion[1], color='red', label=f'Suggestion {i+1}', zorder=5)
+    
+    plt.xlabel('Latitude')
+    plt.ylabel('Longitude')
+    plt.title('Suggested Charging Station Locations')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
 # Load and prepare generated data for training
 json_data = load_data_from_json('training_data_with_constraint.json')
 with tqdm(total=len(json_data)) as pbar:
@@ -64,6 +86,7 @@ print(ml_model.n_estimators)
 print("Model trained successfully!")
 
 # Program loop
+num_inputs = 0
 while True:
     user_input = input("Enter user coordinates (latitude, longitude) or 'exit' to stop: ")
     if user_input.lower() == 'exit':
@@ -77,29 +100,24 @@ while True:
         print(f"Distance to {closest_station}: {closest_distance}")
         
         if log_request(user_coords, closest_station, closest_distance):
-            X = np.array([req['user_coords'] for req in logged_requests])
-            if len(X) > 2:  # Checking if there are enough requests for clustering
-                kmeans = KMeans(n_clusters=3)  # Set the number of clusters appropriately
-                
-                # Create a tqdm progress bar for the clustering process
-                with tqdm(desc='Clustering Progress', total=100) as pbar:
-                    kmeans.fit(X)
-                    pbar.update(100)  # Update progress to indicate completion
-                    
-                cluster_centers = kmeans.cluster_centers_
-                print(f"Request logged for ML.")
-                print(f"Suggestions for new charging station locations based on logged requests: {cluster_centers}")
-            else:
-                print("Not enough logged requests to make suggestions based on clustering.")
-        else:
-            print("No logged requests to make suggestions.")
+            num_inputs += 1
             
+            if num_inputs > 2:
+                X = np.array([req['user_coords'] for req in logged_requests])
+                
+                kmeans = KMeans(n_clusters=3)
+                kmeans.fit(X)
+                cluster_centers = kmeans.cluster_centers_
+                
+                plt.figure(figsize=(8, 6))
+                plt.scatter(X[:, 0], X[:, 1], c='blue', label='Logged Requests')
+                plt.scatter(cluster_centers[:, 0], cluster_centers[:, 1], c='red', marker='x', s=100, label='Cluster Centers')
+                plt.title('Logged Requests and Cluster Centers')
+                plt.xlabel('Latitude')
+                plt.ylabel('Longitude')
+                plt.legend()
+                plt.grid(True)
+                plt.show()
+                
     except ValueError:
         print("Invalid input. Please enter latitude and longitude separated by a comma.")
-
-
-
-
-
-
-
